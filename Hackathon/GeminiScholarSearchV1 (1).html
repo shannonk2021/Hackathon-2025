@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scholarship Matcher - Light Mode</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="Java Script/ScholarSearch.V2Working.js" defer></script>
+    <link rel="stylesheet" type="text/css" href="CSS/styles.css" />
+  </head>
+  <body>
+    <!-- Main Content Container -->
+    <div class="container mx-auto max-w-3xl p-6 md:p-10">
+      <!-- Header with Logo and Vibrant Title -->
+      <header class="mb-10 text-center">
+        <div class="flex flex-col items-center justify-center">
+          <!-- SVG Logo: Magnifying Glass (Search) -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="w-16 h-16 text-indigo-500 mb-2"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.643 4.644a.75.75 0 0 1-1.06 1.06l-4.644-4.643A8.25 8.25 0 0 1 2.25 10.5Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <h1
+            class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 tracking-tight"
+          >
+            <!-- FundScout -->
+            ScholarMatch
+          </h1>
+          <p class="text-xl text-gray-500 mt-2 font-medium">
+            Make Scholarships Easy: Jump-start your College Experience.
+          </p>
+          <nav>
+            <ul>
+              <li style="margin-right: 10px">
+                <button
+                  type="button"
+                  style="width: 120px"
+                  class="mt-8 px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition"
+                  onclick="location.href='Home.html'"
+                  title="Home"
+                >
+                  Home
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  style="width: 120px"
+                  class="mt-8 px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition"
+                  onclick="location.href='InternshipFinderV1.html'"
+                  title="Internships"
+                >
+                  Internships
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Input Form -->
+      <div class="bg-white p-8 rounded-2xl shadow-2xl shadow-indigo-200/50">
+        <form id="scholarship-form">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Academic Level -->
+            <div>
+              <label
+                for="academic-level"
+                class="block text-sm font-semibold text-gray-700 mb-2"
+                >Academic Level</label
+              >
+              <select
+                id="academic-level"
+                name="academic-level"
+                class="w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-200"
+              >
+                <option value="High School Student">High School Student</option>
+                <option value="Undergraduate (Freshman)">
+                  Undergraduate (Freshman)
+                </option>
+                <option value="Undergraduate (Sophomore)">
+                  Undergraduate (Sophomore)
+                </option>
+                <option value="Undergraduate (Junior)">
+                  Undergraduate (Junior)
+                </option>
+                <option value="Undergraduate (Senior)">
+                  Undergraduate (Senior)
+                </option>
+                <option value="Graduate Student">Graduate Student</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- GPA -->
+            <div>
+              <label
+                for="gpa"
+                class="block text-sm font-semibold text-gray-700 mb-2"
+                >Current GPA (e.g., 3.7)</label
+              >
+              <input
+                type="number"
+                id="gpa"
+                name="gpa"
+                min="0.00"
+                max="5.00"
+                step="0.1"
+                placeholder="e.g., 3.7"
+                class="w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-200"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Major / Field of Study -->
+          <div class="mt-6">
+            <label
+              for="major"
+              class="block text-sm font-semibold text-gray-700 mb-2"
+              >Major / Field of Study</label
+            >
+            <input
+              type="text"
+              id="major"
+              name="major"
+              placeholder="e.g., Civil Engineering, Nursing, Art History"
+              class="w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-200"
+              required
+            />
+          </div>
+
+          <!-- Interests / Skills / Extracurriculars -->
+          <div class="mt-6">
+            <label
+              for="interests"
+              class="block text-sm font-semibold text-gray-700 mb-2"
+              >Key Interests, Skills, & Extracurriculars</label
+            >
+            <textarea
+              id="interests"
+              name="interests"
+              rows="3"
+              class="w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-200"
+              placeholder="e.g., Volunteering at animal shelter, debate team captain, proficient in Python, plays violin"
+            ></textarea>
+          </div>
+
+          <!-- Demographic / Personal Info -->
+          <div class="mt-6">
+            <label
+              for="demographics"
+              class="block text-sm font-semibold text-gray-700 mb-2"
+              >Demographic / Personal Info (Optional)</label
+            >
+            <textarea
+              id="demographics"
+              name="demographics"
+              rows="2"
+              class="w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-200"
+              placeholder="e.g., First-generation student, resident of Texas, member of specific group, financial need"
+            ></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="mt-8">
+            <button
+              type="submit"
+              id="submit-button"
+              class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-extrabold py-4 px-6 rounded-xl shadow-xl hover:shadow-2xl hover:from-indigo-600 hover:to-blue-700 transition-all duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.01]"
+            >
+              Find My Scholarships
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Results Section -->
+      <div
+        id="results-container"
+        class="bg-white p-8 rounded-xl shadow-xl shadow-indigo-100/50 mt-10 hidden"
+      >
+        <h2
+          class="text-3xl font-bold text-gray-800 mb-6 border-b border-gray-200 pb-4"
+        >
+          Matching Scholarships
+        </h2>
+
+        <!-- Loader -->
+        <div id="loader" class="flex justify-center items-center h-32 hidden">
+          <div class="loader"></div>
+        </div>
+
+        <!-- Error Message -->
+        <div
+          id="error-message"
+          class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6"
+          role="alert"
+        >
+          <strong class="font-bold">Error:</strong>
+          <span class="block sm:inline" id="error-text"></span>
+        </div>
+
+        <!-- Results List -->
+        <div id="results-list" class="space-y-6">
+          <!-- Scholarship cards will be injected here by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

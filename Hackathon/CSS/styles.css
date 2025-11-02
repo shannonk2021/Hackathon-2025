@@ -1,0 +1,40 @@
+
+      /* Custom styles for the loader */
+      .loader {
+        border: 8px solid #e5e7eb; /* Gray 200 */
+        border-top: 8px solid #4f46e5; /* Indigo 600 for the spinner */
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      body {
+        background-color: #f9fafb; /* Gray 50 */
+        font: sans-serif;
+        min-height: 100vh;
+        color: #4a4a4a; /* Gray 800 */
+      }
+
+      nav a{
+        text-decoration: none;
+        font-size: 1em;
+        border: none;
+        padding: 15px 25px; 
+        font-weight: bold;
+      }
+
+      nav ul li {
+        list-style: none;
+        flex-direction: row;
+        display: inline-block;
+      }
+

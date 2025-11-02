@@ -1,0 +1,359 @@
+// --- DOM Elements ---
+      const form = document.getElementById("scholarship-form");
+      const submitButton = document.getElementById("submit-button");
+      const resultsContainer = document.getElementById("results-container");
+      const loader = document.getElementById("loader");
+      const errorMessage = document.getElementById("error-message");
+      const errorText = document.getElementById("error-text");
+      const resultsList = document.getElementById("results-list");
+
+      // --- Gemini API Configuration ---
+      const API_KEY = "AIzaSyA0Fwzt0B648p6XPLC47LL1vssAWy2e6Fw";
+      const API_MODEL = "gemini-2.5-flash-preview-09-2025";
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`;
+
+      // --- Event Listener ---
+      form.addEventListener("submit", handleFormSubmit);
+
+      
+
+    //    * Clears previous results and sets the loading state of the application.
+    //    * @param {boolean} isLoading - Whether the application is currently loading.
+       
+      function setLoading(isLoading) {
+        resultsContainer.classList.remove("hidden");
+
+        if (isLoading) {
+          // ERASE PAST SEARCH RESULTS
+          resultsList.innerHTML = "";
+          errorMessage.classList.add("hidden");
+
+          loader.classList.remove("hidden");
+          submitButton.disabled = true;
+          submitButton.textContent = "Searching...";
+        } else {
+          // Hide all loaders and enable button
+          loader.classList.add("hidden");
+          submitButton.disabled = false;
+          submitButton.textContent = "Find My Scholarships";
+        }
+      }
+
+      
+       // Displays an error message.
+       // @param {string} message - The error message to display.
+       
+      function displayError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove("hidden");
+        resultsList.innerHTML = ""; // Ensure list is clear if an error occurred
+      }
+
+      
+        // Fetches a resource with exponential backoff retry logic.
+        // @param {string} url - The URL to fetch.
+        // @param {object} options - The fetch options (method, headers, body, etc.).
+        // @returns {Promise<Response>} - The successful response object.
+       
+      async function fetchWithBackoff(url, options) {
+        const MAX_RETRIES = 5;
+        let delay = 1000; // 1 second
+
+        for (let i = 0; i < MAX_RETRIES; i++) {
+          try {
+            const response = await fetch(url, options);
+            if (response.status !== 429 && response.status < 500) {
+              return response;
+            }
+            throw new Error(`Retryable status code: ${response.status}`);
+          } catch (error) {
+            if (i === MAX_RETRIES - 1) {
+              throw error;
+            }
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2;
+          }
+        }
+      }
+
+
+       // Handles the form submission event.
+       // @param {Event} event - The form submission event.
+       
+      async function handleFormSubmit(event) {
+        event.preventDefault();
+        setLoading(true);
+
+        // 1. Collect form data
+        const formData = new FormData(form);
+        const userProfile = {
+          level: formData.get("academic-level"),
+          gpa: formData.get("gpa"),
+          major: formData.get("major"),
+          interests: formData.get("interests"),
+          demographics: formData.get("demographics"),
+        };
+
+        // 2. Construct the prompts
+        const currentDate = new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        // Updated System Prompt: Added strict constraint against hallucination.
+        const systemPrompt =
+          "You are a world-class scholarship research assistant. Your task is to find relevant, current, and legitimate scholarships for a student based on their profile. You are strictly forbidden from inventing or hallucinating any scholarship details, links, or deadlines; all data must be verified by the search tool. CRITICAL: You MUST only use links from the official, primary sponsoring organization's website (e.g., direct university, corporate, or non-profit domains). AVOID third-party scholarship aggregator sites. Provide the application link that points to the **direct application form or submission page**. This link must be the most stable and direct path to apply. You MUST use the provided Google Search tool to find scholarships. Provide your findings as a JSON array as described in the user prompt. Do not include any text, headers, or explanations outside the JSON block.";
+
+        // Updated User Prompt: Increased requested count to 10 to encourage deeper searching.
+        const userPrompt = `
+                Here is the student's profile:
+                - Academic Level: ${userProfile.level}
+                - GPA: ${userProfile.gpa}
+                - Major/Field of Study: ${userProfile.major}
+                - Interests/Skills/Extracurriculars: ${
+                  userProfile.interests || "N/A"
+                }
+                - Demographic/Personal Info: ${
+                  userProfile.demographics || "N/A"
+                }
+
+                Please find up to 10 general scholarships that are a strong match for this profile. Use multiple search queries and take your time to ensure all 10 results are found if possible. Never make up or hallucinate scholarship data.
+                
+                CRITICAL REQUIREMENT: Only include scholarships that are currently accepting applications. This means the deadline must be in the future (after ${currentDate}). If the deadline has passed, do not include it. The link must be to the application form.
+                
+                For the general scholarships, provide:
+                1.  "name": The official name of the scholarship.
+                2.  "description": A brief one-sentence description of what it is and who it's for.
+                3.  "amount": The award amount (e.g., "$1,000", "Varies", "Up to $5,000").
+                4.  "deadline": The application deadline (e.g., "October 31, 2025", "Varies").
+                5.  "url": The direct URL to the scholarship's online application form or submission page.
+
+                Return ONLY a valid JSON array of scholarship objects with the above properties. Do not include any text, headers, or explanations outside the JSON array block.
+            `;
+
+        // 3. Call the Gemini API
+        try {
+          const responseData = await callGeminiApi(userPrompt, systemPrompt);
+
+          if (responseData && Array.isArray(responseData)) {
+            displayResults({
+              scholarships: responseData,
+            });
+          } else {
+            displayError(
+              "The AI returned an unexpected format. Please try again."
+            );
+          }
+        } catch (error) {
+          console.error("Error calling Gemini API:", error);
+          displayError(
+            `An error occurred while fetching scholarships: ${error.message}`
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      
+       // Calls the Gemini API with exponential backoff.
+       
+      async function callGeminiApi(userPrompt, systemPrompt) {
+        const payload = {
+          contents: [
+            {
+              parts: [{ text: userPrompt }],
+            },
+          ],
+          tools: [
+            {
+              google_search: {},
+            },
+          ],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+        };
+
+        const response = await fetchWithBackoff(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          let errorBody = await response.text();
+          try {
+            const errorJson = JSON.parse(errorBody);
+            if (errorJson.error && errorJson.error.message) {
+              errorBody = errorJson.error.message;
+            }
+          } catch (e) {}
+
+          // Explicit check for authentication errors (401/403)
+          if (response.status === 401 || response.status === 403) {
+            throw new Error(
+              `API request failed with status ${response.status} (Authentication/Permission Denied). Please ensure the API key is valid.`
+            );
+          }
+
+          throw new Error(
+            `API request failed with status ${response.status}: ${errorBody}`
+          );
+        }
+
+        const result = await response.json();
+
+        const candidate = result.candidates?.[0];
+        const jsonText = candidate?.content?.parts?.[0]?.text;
+
+        if (!jsonText) {
+          if (result.promptFeedback) {
+            console.error("Prompt Feedback:", result.promptFeedback);
+            throw new Error(
+              `Request was blocked. Reason: ${result.promptFeedback.blockReason}`
+            );
+          }
+          throw new Error(
+            "Invalid API response structure. No text content part found."
+          );
+        }
+
+        // --- Robust JSON PARSING LOGIC ---
+        try {
+          let cleanJsonText = jsonText.trim();
+          cleanJsonText = cleanJsonText
+            .replace(/```json\s*/gs, "")
+            .replace(/```/gs, "")
+            .trim();
+
+          let finalJsonString = cleanJsonText;
+
+          const firstIndex = finalJsonString.search(/[\{\[]/);
+
+          if (firstIndex !== -1) {
+            const startChar = finalJsonString[firstIndex];
+            const endChar = startChar === "{" ? "}" : "]";
+            const lastIndex = finalJsonString.lastIndexOf(endChar);
+
+            if (lastIndex > firstIndex) {
+              finalJsonString = finalJsonString.substring(
+                firstIndex,
+                lastIndex + 1
+              );
+            } else {
+              throw new Error("Cannot find matching closing brace/bracket.");
+            }
+          } else {
+            throw new Error("No starting JSON character ({ or [) found.");
+          }
+
+          let parsedResult = JSON.parse(finalJsonString);
+
+          // Expect an array of scholarships (new simplified structure)
+          if (Array.isArray(parsedResult)) {
+            return parsedResult;
+          } else if (
+            typeof parsedResult === "object" &&
+            parsedResult !== null &&
+            parsedResult.scholarships
+          ) {
+            // Backwards compatibility for old JSON structure
+            return parsedResult.scholarships;
+          }
+
+          throw new Error(
+            "Parsed content did not match expected structure (JSON array of scholarships)."
+          );
+        } catch (parseError) {
+          console.error(
+            "Failed to parse JSON from raw API response. Raw Text:",
+            jsonText,
+            parseError
+          );
+          throw new Error(
+            `The model response could not be parsed as JSON. Syntax Error: ${parseError.message}.`
+          );
+        }
+        // --- END JSON PARSING LOGIC ---
+      }
+
+        // submitButton.addEventListener("click", () => {loader.focus();});
+       // Simple utility to escape HTML characters in dynamic text.
+       
+      function escapeHTML(str) {
+        if (typeof str !== "string") return "";
+        return str.replace(/[&<>"']/g, function (m) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[m];
+        });
+      }
+
+      
+       // Displays the scholarship results as cards.
+       // @param {object} resultsObject - Object containing 'scholarships' array.
+       
+      function displayResults(resultsObject) {
+        resultsList.innerHTML = ""; // Clear previous results
+
+        const scholarships = resultsObject.scholarships || [];
+
+        // --- Display General Scholarship Cards ---
+        if (scholarships.length === 0) {
+          resultsList.innerHTML += `<p class="text-gray-500 text-center p-4 rounded-lg bg-gray-100 border border-gray-300">No matching scholarships were found based on your profile. Try broadening your search terms.</p>`;
+          return;
+        }
+
+        scholarships.forEach((scholarship) => {
+          const cardClasses =
+            "border rounded-xl p-6 shadow-md transition-all duration-300 bg-white border-l-4 border-indigo-500 hover:shadow-lg hover:border-blue-500";
+
+          const buttonClasses =
+            "inline-block bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-lg hover:from-indigo-600 hover:to-blue-700 transition-colors transform hover:-translate-y-0.5";
+
+          const icon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 inline mr-1 text-green-600">
+                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                       </svg>`;
+
+          const card = document.createElement("div");
+          card.className = cardClasses;
+
+          card.innerHTML = `
+                    <h3 class="text-xl font-bold text-gray-800">${icon}${escapeHTML(
+            scholarship.name
+          )}</h3>
+                    <p class="text-gray-600 mt-2">${escapeHTML(
+                      scholarship.description
+                    )}</p>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-gray-400">Amount</span>
+                            <p class="text-lg font-bold text-green-600">${
+                              escapeHTML(scholarship.amount) || "N/A"
+                            }</p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-gray-400">Deadline</span>
+                            <p class="text-lg font-bold text-red-600">${
+                              escapeHTML(scholarship.deadline) || "N/A"
+                            }</p>
+                        </div>
+                    </div>
+                    <div class="mt-5">
+                        <a href="${escapeHTML(scholarship.url)}" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="${buttonClasses}">
+                            View Details & Apply &rarr;
+                        </a>
+                    </div>
+                `;
+          resultsList.appendChild(card);
+        });
+      }
+      submitButton.addEventListener("click", () => {loader.focus();});
